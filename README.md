@@ -6,7 +6,9 @@ A small local utility for reviewing large folders of mixed media in randomized o
 
 It recursively discovers supported files, opens them one at a time in a browser UI, remembers review progress, and lets you either keep a file or send it to the operating system's Recycle Bin / Trash.
 
-**Release status:** RC8 passed the automated safety checks on the owner's Windows 11 / Python 3.13 system on 2026-10-13: 44 Python tests executed (41 passed, 3 expected platform skips, 0 failures/errors) and 7/7 disposable-file OS integration checks passed, including a real Recycle Bin move and an outside-root junction rejection. Five headless Chromium regressions also passed in the audit environment. **The GitHub Actions matrix has not run on a public repository, and a real application screenshot remains pending. The source is licensed under MPL 2.0.** See [validation status](VALIDATION_STATUS.md) and [release checklist](RELEASE_CHECKLIST.md).
+**Release status:** RC8 passed the automated safety checks on the owner's Windows 11 / Python 3.13 system on 2026-10-13: 44 Python tests executed (41 passed, 3 expected platform skips, 0 failures/errors) and 7/7 disposable-file OS integration checks passed, including a real Recycle Bin move and an outside-root junction rejection. Five headless Chromium regressions also passed in the audit environment. If any further tests produce errors or bugs, contact Adam Flores.
+
+**The GitHub Actions matrix has not run on a public repository, and a real application screenshot remains pending. The source is licensed under MPL 2.0.** See [validation status](VALIDATION_STATUS.md) and [release checklist](RELEASE_CHECKLIST.md).
 
 ## Features
 
