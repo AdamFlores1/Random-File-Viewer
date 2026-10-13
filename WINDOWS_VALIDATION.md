@@ -1,6 +1,6 @@
-# Windows validation checklist — required before claiming v1.0 verified
+# Windows validation using disposable files
 
-**Validation update (2026-10-13):** RC8 passed on the owner's Windows 11 / Python 3.13 PC: **44 tests executed; 41 passed, 3 expected platform skips, zero failures/errors**. A separate, previously executed private Windows integration harness also completed **7/7 disposable-file checks, zero inconclusive**, including a real Recycle Bin move and outside-root junction rejection. That helper is **no longer distributed** after a heuristic antivirus alert. The launcher in this package runs the 44 Python tests only. GitHub Actions across Python 3.10/3.13 and Linux is still pending; media/GUI usability is not established by these fixture tests.
+**Validation update (2026-10-13):** RC8 passed on the owner's Windows 11 / Python 3.13 PC: **44 tests executed; 41 passed, 3 expected platform skips, zero failures/errors**. A separate, previously executed private Windows integration harness also completed **7/7 disposable-file checks, zero inconclusive**, including a real Recycle Bin move and outside-root junction rejection. That helper is **no longer distributed** after a heuristic antivirus alert. The launcher in this package runs the 44 Python tests only. The cross-platform GitHub Actions matrix passed on the corrected Windows test branch; media/GUI usability is not established by these fixtures.
 
 ## Windows test launcher (Python tests only)
 
@@ -12,7 +12,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\RUN_WINDOWS_CHECKS.ps1
 
 This runs all **44 Python tests** (with platform-specific skips), including the Windows junction test. A previously run private system-check harness verified seven additional Windows behaviors on the owner's PC; those results remain documented above but the harness has been removed from this public package after a heuristic antivirus detection. **Failures in the shipped test suite should still be investigated before release.** To repeat real Recycle Bin behavior or interactive checks, use the disposable-media manual steps below.
 
-Browser keyboard behavior has separately passed five Chromium mock-network checks, but the newly added real Flask+Chromium flow is only executed once CI or a local environment with Flask and Playwright runs it.
+Browser keyboard behavior has separately passed five Chromium mock-network checks, and the GitHub Actions browser job includes a real Flask+Chromium disposable-file flow.
 
 Some checks are inherently not established by automation alone: actual Windows UI usability on your display, compatibility with your own media/video codecs, and screenshots suitable for public GitHub. Those are optional presentation/compatibility checks, not reasons to risk testing your personal files.
 
@@ -89,4 +89,4 @@ git log --all -- review_progress.json
 
 The ZIP in this package deliberately contains no progress JSON, corrupt backups, Git metadata, credentials, or machine-local files. If any progress files were committed in an earlier repository, inspect and sanitize the public history as appropriate; `.gitignore` alone does not remove committed history.
 
-Before the public GitHub release, provide a real screenshot of the UI and set repository metadata. MPL 2.0 is selected and included in the release package. **RC8 has passed the automated Windows unit and live OS checks on Python 3.13**. The additional manual walkthrough below is optional usability/codec testing using disposable files, not a prerequisite to repeat the already-successful automated checks. Do not claim Python 3.10 or GitHub Actions passed until those CI results exist.
+Before the public GitHub release, provide a real screenshot of the UI and set repository metadata. MPL 2.0 is selected and included in the release package. **RC8 has passed the automated Windows unit and live OS checks on Python 3.13**. The additional manual walkthrough below is optional usability/codec testing using disposable files, not a prerequisite to repeat the already-successful automated checks. The corrected Windows/Linux CI matrix passed on PR #1. Confirm the latest main-branch run before publishing a release.

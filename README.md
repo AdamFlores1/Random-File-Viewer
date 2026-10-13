@@ -6,9 +6,7 @@ A small local utility for reviewing large folders of mixed media in randomized o
 
 It recursively discovers supported files, opens them one at a time in a browser UI, remembers review progress, and lets you either keep a file or send it to the operating system's Recycle Bin / Trash.
 
-**Release status:** RC8 passed the automated safety checks on the owner's Windows 11 / Python 3.13 system on 2026-10-13: 44 Python tests executed (41 passed, 3 expected platform skips, 0 failures/errors) and 7/7 disposable-file OS integration checks passed, including a real Recycle Bin move and an outside-root junction rejection. Five headless Chromium regressions also passed in the audit environment. If any further tests produce errors or bugs, contact Adam Flores.
-
-**The GitHub Actions matrix has not run on a public repository, and a real application screenshot remains pending. The source is licensed under MPL 2.0.** See [validation status](VALIDATION_STATUS.md) and [release checklist](RELEASE_CHECKLIST.md).
+**Release status:** The Windows 11 / Python 3.13 owner test run passed 41 tests (3 expected skips) and 7 separate disposable-file OS checks. The GitHub Actions Windows/Linux Python 3.10/3.13 and Chromium matrix [passed on the Windows portability fix](https://github.com/AdamFlores1/Random-File-Viewer/actions/runs/38479788989). A genuine application screenshot remains pending. Report bugs via [GitHub Issues](https://github.com/AdamFlores1/Random-File-Viewer/issues).
 
 ## Features
 
@@ -154,41 +152,21 @@ The viewer opens as files are discovered rather than waiting for a full inventor
 
 This is appropriate for ordinary personal media collections and keeps the project understandable. For extremely large collections, the first likely bottleneck is the growing JSON progress file rather than randomization itself. A SQLite-backed progress store is the recommended next scalability upgrade **only if profiling shows noticeable save latency**.
 
-## Windows Python test suite
+## Testing and validation
 
-Once you have installed `requirements.txt` in `.venv`, run:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\RUN_WINDOWS_CHECKS.ps1
-```
-
-This launcher runs the **44 Python tests only**; it does not run a separate Windows system-check helper or move a real file to your Recycle Bin. The suite includes a real junction test on Windows (using its own temporary directories), plus mocked Recycle Bin and error cases. The independent, previously completed **7/7 live Windows checks** remain recorded as historical release evidence, but their testing helper is **not distributed** because an antivirus flagged it heuristically. See `WINDOWS_VALIDATION.md` for a safe optional manual walkthrough.
-
-A separate CI browser test exercises a real local Flask server using a **fake trash folder**, so it never deletes or trashes personal files.
-
-## Tests
-
-The repository contains **44 standard-library `unittest` cases** for the high-risk server behaviors (Flask is required to import the app):
+Run the unit and integration tests after installing dependencies:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-They cover traversal and resolved-path containment (including a mocked Windows-compatible case), file-replacement protection, safe Trash failures, explicit permanent deletion, request tokens including non-ASCII inputs, membership checks, scan-completion locking, scan-end progress persistence, incomplete-scan preservation, failed-cleanup preservation, link-obscured history, damaged progress files, multi-viewer progress merging for different folders, random pool selection, POSIX filenames, and HTML CSP response directives. **RC8 Windows result (2026-10-13): all 44 tests executed, 41 passed, 3 expected platform skips, 0 failures/errors. A previously executed private Windows integration harness also reported 7 passed OS checks and 0 inconclusive, including actual Send2Trash/Recycle Bin behavior and a real junction escape test. That harness is not included in the public package.** The audit environment could not run the full Flask suite; it independently reran five headless Chromium regression scenarios successfully. The GitHub Actions matrix is configured but remains unverified until the repository is pushed.
+On Windows, `RUN_WINDOWS_CHECKS.ps1` runs the same suite using the local `.venv` interpreter. The suite currently has 44 tests; skips vary with platform and symlink privileges. It exercises path safety, file replacement checks, progress persistence and recovery, Trash-failure handling, and a real Windows junction test.
 
-An **optional Chromium keyboard regression** runs against simulated in-browser API responses, without Flask or real files:
+The [GitHub Actions workflow](.github/workflows/tests.yml) tests Python 3.10/3.13 on Windows and Linux, plus Chromium browser safety tests including a disposable-file Flask flow. The corrected Windows-path test branch passed all five CI jobs. The original main-branch run failed three tests due to test-fixture path normalization and was repaired in PR #1.
 
-```bash
-pip install playwright
-playwright install chromium
-python tests/browser_keyboard_probe.py
-```
+Historical owner-run checks: Windows 11 / Python 3.13, 41 passed, 3 skipped, no failures; 7/7 separate live Windows disposable-file checks passed, including a verified Recycle Bin move. The standalone Windows helper used for those seven checks is not distributed following a heuristic antivirus alert. Those results are historical and cannot be reproduced using the current Windows launcher alone.
 
-This checks that an initial Delete key press followed by synthetic auto-repeat events performs **only one** deletion. It also exercises the Delete button when the mocked API reports that a deletion completed but saving progress failed, when a successful deletion is followed by a failed status refresh, whether an incomplete scan produces a visible warning, and whether permanent deletion requires affirmative confirmation. Playwright is a QA-only dependency, not required to use the viewer. These simulations do **not** replace the manual Windows Recycle Bin test.
-
-**GitHub Actions:** [`.github/workflows/tests.yml`](.github/workflows/tests.yml) is configured to run the entire Python suite on Windows and Linux using Python 3.10 and 3.13, plus Chromium safety regressions against both simulated responses and a real temporary Flask server on Linux. It will execute automatically on GitHub pushes and pull requests; results are **not yet known**. The Windows unit suite now includes a **real junction** regression. CI by itself does not establish how the Recycle Bin behaves on the owner's PC.
-
-See `WINDOWS_VALIDATION.md` for the safe throwaway-folder procedure; see `RELEASE_CHECKLIST.md` for publication steps.
+For manual checks with disposable files, see [Windows validation](WINDOWS_VALIDATION.md). Automated checks do not guarantee compatibility with every media codec, system configuration, or hostile filesystem race.
 
 ## Project layout
 
@@ -201,9 +179,7 @@ Random File Viewer/
 ├─ AUDIT.md
 ├─ ROADMAP.md
 ├─ WINDOWS_VALIDATION.md
-├─ LEARNING_GUIDE.md
 ├─ .gitignore
-├─ RELEASE_CHECKLIST.md
 ├─ LICENSE
 ├─ RUN_WINDOWS_CHECKS.ps1
 ├─ .github/workflows/tests.yml
@@ -216,7 +192,7 @@ Random File Viewer/
 
 ## Scope
 
-This is primarily a portfolio utility. Reliability and safe filesystem behavior come before adding features. See `ROADMAP.md` for the recommended next steps; `LEARNING_GUIDE.md` provides an optional code-reading path once you want to study the implementation.
+This is primarily a portfolio utility. Reliability and safe filesystem behavior come before adding features. See [ROADMAP.md](ROADMAP.md) for possible future improvements.
 
 
 ## License
