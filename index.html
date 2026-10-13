@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Adam Flores
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Random File Viewer</title>
+<style>
+  :root{
+    --bg: #14110f;
+    --surface: #1d1915;
+    --surface-2: #262019;
+    --border: #332c22;
+    --text: #ede7dd;
+    --text-muted: #8a8377;
+    --amber: #e8a33d;
+    --amber-dim: #7a5a24;
+    --rust: #c1503a;
+    --rust-dim: #6b2c20;
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Filmstrip progress bar - the signature element */
+  .filmstrip {
+    height: 6px;
+    background: var(--surface);
+    display: flex;
+    position: relative;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .filmstrip::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--border) 0, var(--border) 1px,
+      transparent 1px, transparent 10px
+    );
+    opacity: 0.6;
+  }
+  .filmstrip-fill {
+    height: 100%;
+    background: var(--amber);
+    transition: width 0.3s ease;
+  }
+
+  header {
+    padding: 14px 24px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .file-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 70%;
+    overflow: hidden;
+  }
+
+  .filename {
+    font-family: var(--font-ui);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0;
+  }
+
+  .filepath {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  header .counts span { color: var(--amber); }
+  header .counts .del { color: var(--rust); }
+
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 32px;
+    min-height: 0;
+    position: relative;
+  }
+
+  .viewer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at center, rgba(255,255,255,0.03) 0%, transparent 70%),
+      var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .viewer img, .viewer video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .viewer iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #fff;
+  }
+
+  .empty-state, .done-state {
+    text-align: center;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    padding: 40px;
+  }
+  .done-state .big {
+    font-size: 20px;
+    color: var(--amber);
+    margin-bottom: 8px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+  }
+
+  .toast {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 8px 14px;
+    border-radius: 5px;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .toast.error { border-color: var(--rust-dim); color: #f0a493; }
+
+  footer {
+    flex-shrink: 0;
+    display: flex;
+    gap: 10px;
+    padding: 16px 24px 22px;
+    justify-content: center;
+  }
+
+  button {
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 13px 26px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+    min-width: 120px;
+  }
+  button:hover:not(:disabled) { background: var(--surface-2); }
+  button:active:not(:disabled) { transform: scale(0.97); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  button.skip {
+    border-color: var(--amber-dim);
+    color: var(--amber);
+  }
+  button.skip:hover:not(:disabled) { background: rgba(232, 163, 61, 0.1); }
+
+  button.delete {
+    border-color: var(--rust-dim);
+    color: var(--rust);
+  }
+  button.delete:hover:not(:disabled) { background: rgba(193, 80, 58, 0.12); }
+
+  .hint {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 4px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="filmstrip"><div class="filmstrip-fill" id="filmstripFill"></div></div>
+
+  <header>
+    <div class="file-info">
+      <span class="filename" id="fileName">Loading…</span>
+      <span class="filepath" id="filePath"></span>
+    </div>
+    <span class="counts">
+      <span id="remainingCount">0</span> left ·
+      <span id="skippedCount">0</span> kept ·
+      <span class="del" id="deletedCount">0</span> deleted
+    </span>
+  </header>
+
+  <main>
+    <div class="viewer" id="viewer">
+      <div class="empty-state">Loading your files…</div>
+    </div>
+    <div class="toast" id="toast"></div>
+  </main>
+
+  <footer>
+    <button class="prev" id="btnPrev" disabled>
+      ← Previous
+      <span class="hint">left arrow</span>
+    </button>
+    <button class="skip" id="btnSkip" disabled>
+      Skip
+      <span class="hint">right arrow / space</span>
+    </button>
+    <button class="delete" id="btnDelete" disabled>
+      <span id="deleteLabel">Delete</span>
+      <span class="hint" id="deleteHint">del key</span>
+    </button>
+  </footer>
+
+<script>
+  const viewer = document.getElementById('viewer');
+  const fileNameEl = document.getElementById('fileName');
+  const filePathEl = document.getElementById('filePath');
+  const remainingEl = document.getElementById('remainingCount');
+  const skippedEl = document.getElementById('skippedCount');
+  const deletedEl = document.getElementById('deletedCount');
+  const filmstripFill = document.getElementById('filmstripFill');
+  const toastEl = document.getElementById('toast');
+  const btnPrev = document.getElementById('btnPrev');
+  const btnSkip = document.getElementById('btnSkip');
+  const btnDelete = document.getElementById('btnDelete');
+  const deleteLabel = document.getElementById('deleteLabel');
+  const deleteHint = document.getElementById('deleteHint');
+  const apiToken = {{ api_token|tojson }};
+
+  let history = [];   // {path, type, url}
+  let pointer = -1;
+  let busy = false;
+  let deleteAvailable = true;
+  let permanentDelete = false;
+  let terminalState = false;
+
+  function showToast(msg, isError) {
+    toastEl.textContent = msg;
+    toastEl.className = 'toast show' + (isError ? ' error' : '');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { toastEl.className = 'toast'; }, 2200);
+  }
+
+  function setBusy(v) {
+    busy = v;
+    const alreadyDeleted = history[pointer]?.status === 'deleted';
+    btnSkip.disabled = v || pointer < 0 || terminalState || alreadyDeleted;
+    btnDelete.disabled = v || pointer < 0 || terminalState || alreadyDeleted || !deleteAvailable;
+    btnPrev.disabled = v || pointer <= 0;
+  }
+
+  async function apiPost(url, body) {
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Review-Token': apiToken,
+      },
+    };
+    if (body !== undefined) options.body = JSON.stringify(body);
+
+    const res = await fetch(url, options);
+    let data = {};
+    try { data = await res.json(); } catch (_) {}
+    if (!res.ok) {
+      const error = new Error(data.error || `Request failed (${res.status})`);
+      // A file operation can succeed before its progress-save step fails.
+      error.fileDeleted = data.file_deleted === true;
+      error.scanError = data.scan_error === true;
+      throw error;
+    }
+    return data;
+  }
+
+  function render() {
+    terminalState = false;
+    const item = history[pointer];
+    viewer.innerHTML = '';
+    if (!item) return;
+    const parts = item.path.split('/');
+    const baseName = parts.pop();
+    fileNameEl.textContent = baseName;
+    fileNameEl.title = item.path;
+    filePathEl.textContent = parts.length ? parts.join('/') + '/' : '';
+
+    if (item.status === 'deleted') {
+      const div = document.createElement('div');
+      div.className = 'empty-state';
+      div.textContent = item.progressUnsaved
+        ? 'The file was deleted, but review progress could not be saved. Check disk space or permissions before continuing. The deletion may not appear in your saved history.'
+        : item.advanceError
+          ? 'The file was deleted successfully, but the viewer could not refresh. Reload this page to continue.'
+          : 'This file was deleted earlier in this session.';
+      viewer.appendChild(div);
+    } else if (item.type === 'image' || item.type === 'gif') {
+      const img = document.createElement('img');
+      img.src = item.url;
+      viewer.appendChild(img);
+    } else if (item.type === 'video') {
+      const vid = document.createElement('video');
+      vid.src = item.url;
+      vid.controls = true;
+      vid.autoplay = true;
+      vid.loop = true;
+      vid.muted = true;
+      viewer.appendChild(vid);
+    } else if (item.type === 'html') {
+      const frame = document.createElement('iframe');
+      frame.src = item.url;
+      frame.sandbox = 'allow-scripts';
+      frame.referrerPolicy = 'no-referrer';
+      viewer.appendChild(frame);
+    } else {
+      const div = document.createElement('div');
+      div.className = 'empty-state';
+      div.textContent = 'Unsupported file type: ' + item.path;
+      viewer.appendChild(div);
+    }
+
+    btnPrev.disabled = pointer <= 0;
+    btnSkip.disabled = item.status === 'deleted';
+    btnDelete.disabled = item.status === 'deleted' || !deleteAvailable;
+  }
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  function showScanning(data = {}) {
+    const scanned = Number(data.scan_scanned_entries || 0).toLocaleString();
+    const found = Number(data.scan_supported_files || 0).toLocaleString();
+    viewer.innerHTML = `<div class="empty-state">Scanning folder in the background…<br><br>${scanned} entries checked · ${found} supported media files found</div>`;
+    fileNameEl.textContent = 'Scanning…';
+    filePathEl.textContent = 'The viewer will start as soon as a randomized batch is available.';
+  }
+
+  async function refreshStatus() {
+    const res = await fetch('/api/status', { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Status request failed (${res.status})`);
+    const data = await res.json();
+
+    remainingEl.textContent = data.scan_complete ? data.remaining_count : `${data.remaining_count}+`;
+    skippedEl.textContent = data.skipped_count;
+    deletedEl.textContent = data.deleted_count;
+
+    const total = data.total_count || 0;
+    const done = data.reviewed_count || 0;
+    if (data.scan_complete) {
+      filmstripFill.style.width = total ? Math.min(100, (done / total) * 100) + '%' : '0%';
+    }
+
+    deleteAvailable = Boolean(data.delete_available);
+    permanentDelete = data.delete_mode === 'permanent';
+    if (data.delete_mode === 'permanent') {
+      deleteLabel.textContent = 'Delete permanently';
+      deleteHint.textContent = 'del key · no undo';
+    } else if (data.delete_mode === 'unavailable') {
+      deleteLabel.textContent = 'Delete unavailable';
+      deleteHint.textContent = 'install send2trash';
+    } else {
+      deleteLabel.textContent = 'Move to Recycle Bin';
+      deleteHint.textContent = 'del key';
+    }
+    setBusy(busy);
+    return data;
+  }
+
+  async function fetchNext() {
+    while (true) {
+      let data;
+      try {
+        data = await apiPost('/api/next');
+      } catch (err) {
+        if (err.scanError) {
+          showScanError(err.message);
+          return null;
+        }
+        throw err;
+      }
+      if (data.waiting) {
+        showScanning(data);
+        await refreshStatus();
+        await sleep(750);
+        continue;
+      }
+      if (data.done) {
+        const status = await refreshStatus();
+        if (status.total_count === 0) showEmptyFolder();
+        else showDone();
+        return null;
+      }
+      return data;
+    }
+  }
+
+
+  function showDone() {
+    terminalState = true;
+    pointer = history.length;
+    viewer.innerHTML = '<div class="done-state"><div class="big">All caught up</div>Every file in this folder has been kept or deleted.</div>';
+    fileNameEl.textContent = '—';
+    filePathEl.textContent = '';
+    btnSkip.disabled = true;
+    btnDelete.disabled = true;
+    btnPrev.disabled = history.length === 0;
+  }
+
+  function showScanError(message) {
+    terminalState = true;
+    pointer = history.length;
+    viewer.innerHTML = '';
+    const warning = document.createElement('div');
+    warning.className = 'empty-state';
+    warning.textContent = message;
+    viewer.appendChild(warning);
+    fileNameEl.textContent = 'Scan incomplete';
+    filePathEl.textContent = 'Check folder permissions or availability, then restart.';
+    btnSkip.disabled = true;
+    btnDelete.disabled = true;
+    btnPrev.disabled = history.length === 0;
+  }
+
+  function showEmptyFolder() {
+    terminalState = true;
+    pointer = -1;
+    viewer.innerHTML = '<div class="empty-state">No supported files found in this folder.</div>';
+    fileNameEl.textContent = '—';
+    filePathEl.textContent = '';
+    btnSkip.disabled = true;
+    btnDelete.disabled = true;
+    btnPrev.disabled = true;
+  }
+
+  async function goNext() {
+    if (pointer < history.length - 1) {
+      // We're revisiting via Previous; step forward to the item that
+      // was already fetched next in line.
+      pointer++;
+      render();
+      return;
+    }
+    setBusy(true);
+    const item = await fetchNext();
+    setBusy(false);
+    if (!item) return;
+    history.push(item);
+    pointer++;
+    render();
+  }
+
+  async function handleSkip() {
+    if (busy || pointer < 0) return;
+    const item = history[pointer];
+    if (item.status === 'deleted') return;
+    setBusy(true);
+    try {
+      await apiPost('/api/skip', { path: item.path });
+      item.status = 'skipped';
+      showToast('Kept: ' + item.path);
+      await refreshStatus();
+      await goNext();
+    } catch (err) {
+      showToast(item.status === 'skipped'
+        ? 'Kept, but the viewer could not refresh: ' + err.message
+        : 'Could not keep: ' + err.message, true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (busy || pointer < 0 || !deleteAvailable) return;
+    const item = history[pointer];
+    if (item.status === 'deleted') return;
+    if (permanentDelete && !window.confirm(
+      'Permanently delete "' + item.path + '"? This cannot be undone.'
+    )) return;
+    setBusy(true);
+    try {
+      await apiPost('/api/delete', { path: item.path });
+      item.status = 'deleted';
+      showToast('Deleted: ' + item.path);
+      await refreshStatus();
+      await goNext();
+    } catch (err) {
+      if (err.fileDeleted || item.status === 'deleted') {
+        // The action succeeded even if saving progress or loading the next
+        // item failed. Never describe a successful delete as a failed one.
+        item.status = 'deleted';
+        if (err.fileDeleted) item.progressUnsaved = true;
+        else item.advanceError = true;
+        render();
+        showToast(err.fileDeleted
+          ? 'Deleted, but progress was not saved.'
+          : 'Deleted, but the viewer could not refresh: ' + err.message, true);
+      } else {
+        showToast('Could not delete: ' + err.message, true);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function handlePrev() {
+    if (busy || pointer <= 0) return;
+    pointer--;
+    render();
+  }
+
+  btnSkip.addEventListener('click', handleSkip);
+  btnDelete.addEventListener('click', handleDelete);
+  btnPrev.addEventListener('click', handlePrev);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    if (e.defaultPrevented || e.isComposing || e.ctrlKey || e.altKey || e.metaKey) return;
+    // Focused buttons and media have their own Space/Enter behavior.
+    if (e.target instanceof Element && e.target.closest(
+      'button, a, video, input, textarea, select, [contenteditable], [role="button"]'
+    )) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); handlePrev(); }
+    else if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); handleSkip(); }
+    else if (e.key === 'Delete') { e.preventDefault(); handleDelete(); }
+  });
+
+  async function init() {
+    try {
+      const status = await refreshStatus();
+      if (status.delete_mode === 'unavailable') {
+        showToast('Recycle Bin support unavailable; Delete is disabled.', true);
+      }
+
+      const item = await fetchNext();
+      if (!item) return;
+      history.push(item);
+      pointer = 0;
+      render();
+      setBusy(false);
+    } catch (err) {
+      viewer.innerHTML = '<div class="empty-state">Could not start the viewer.</div>';
+      fileNameEl.textContent = 'Error';
+      showToast(err.message, true);
+      setBusy(true);
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

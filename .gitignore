@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+review_progress.json
+review_progress.json.tmp
+review_progress.json.corrupt*
+.DS_Store
+review_progress.json.lock
+
+# Local test/build artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+test-results/
+playwright-report/
