@@ -3,7 +3,6 @@
 ## Publication milestones
 
 - Confirm the current `main` branch passes the full GitHub Actions matrix.
-- Capture a genuine interface screenshot using disposable media, and link it in the README.
 - Tag `v1.0.0` only after release checks succeed.
 
 ## Potential enhancements (based on user feedback)
@@ -21,6 +20,8 @@
 Move progress from JSON to SQLite only if measurements show that atomic JSON rewrites become noticeably slow for the collection sizes the tool is expected to handle. Do not add a database preemptively.
 
 ### Later optional features
+
+- Add an authentic README screenshot/demo using disposable, non-private media when convenient.
 
 - Undo for trash operations where the platform can support it safely
 - Duplicate detection using staged hashing (size -> fast hash -> full hash)

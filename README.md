@@ -6,7 +6,7 @@ A small local utility for reviewing large folders of mixed media in randomized o
 
 It recursively discovers supported files, opens them one at a time in a browser UI, remembers review progress, and lets you either keep a file or send it to the operating system's Recycle Bin / Trash.
 
-**Release status:** The Windows 11 / Python 3.13 owner test run passed 41 tests (3 expected skips) and 7 separate disposable-file OS checks. The GitHub Actions Windows/Linux Python 3.10/3.13 and Chromium matrix [passed on the Windows portability fix](https://github.com/AdamFlores1/Random-File-Viewer/actions/runs/38479788989). A genuine application screenshot remains pending. Report bugs via [GitHub Issues](https://github.com/AdamFlores1/Random-File-Viewer/issues).
+**Release status:** The Windows 11 / Python 3.13 owner test run passed 41 tests (3 expected skips) and 7 separate disposable-file OS checks. The GitHub Actions Windows/Linux Python 3.10/3.13 and Chromium matrix [passed on `main`](https://github.com/AdamFlores1/Random-File-Viewer/actions/runs/38481266599). A screenshot may be added in a future update. Report bugs via [GitHub Issues](https://github.com/AdamFlores1/Random-File-Viewer/issues).
 
 ## Features
 
