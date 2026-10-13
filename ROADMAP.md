@@ -1,22 +1,12 @@
 # Random File Viewer — Portfolio Roadmap
 
-## Current target: v1.0 portfolio release candidate
+## Publication milestones
 
-The application fixes and regression tests are implemented, and **RC8 automated validation passed on Windows 11 / Python 3.13** (41 passed + 3 expected skips from 44 tests, plus 7/7 live Windows checks). It remains a release candidate until GitHub CI runs and remaining publication assets are finalized. The owner selected MPL 2.0, and the release package includes the license and source notices.
+- Confirm the current `main` branch passes the full GitHub Actions matrix.
+- Capture a genuine interface screenshot using disposable media, and link it in the README.
+- Tag `v1.0.0` only after release checks succeed.
 
-Keep the application small and demonstrate that local filesystem utilities can be built safely.
-
-### Must-have before calling v1.0 complete
-
-- **Completed 2026-10-13:** Run the **44 Python safety tests** on Windows; 41 passed, 3 expected skips, no failures.
-- Perform a manual review with a disposable test folder containing nested folders, Unicode filenames, spaces, very long names, images, GIFs, videos, and HTML.
-- **Completed:** Real Recycle Bin deletion passed the automated Windows live check; the separate unit test for failure without permanent fallback passed.
-- Test a realistically large folder and record startup time and per-decision progress-save latency.
-- Add one real screenshot or short GIF to the README for portfolio presentation (no synthetic mockups presented as the real UI).
-- Add basic repository metadata: a short description and topics. **License selected:** MPL 2.0 (full text and source notices included).
-- Check Git history for previously committed `review_progress.json` or other private paths before publishing.
-
-## Next improvements — only after v1.0 safety validation
+## Potential enhancements (based on user feedback)
 
 ### Small quality upgrades
 
@@ -46,7 +36,3 @@ Move progress from JSON to SQLite only if measurements show that atomic JSON rew
 - Large framework rewrites
 
 Those would add more risk and maintenance than portfolio value for this project.
-
-**RC6:** The RC5 history safeguards remain, and follow-up work addresses random selection, separate-folder concurrent viewers, outgoing HTML resources, non-ASCII tokens and permanent-delete confirmation. Windows validation remains mandatory.
-
-**RC8 Windows correction and validation (2026-10-13):** The Windows reparse fallback distinguishes missing paths from unsafe junctions. The full Windows 3.13 suite passed (41/44 plus 3 expected skips), followed by 7/7 disposable-file OS checks. GitHub Actions on Windows 3.10/3.13 and Linux 3.10/3.13 remains pending.
