@@ -201,10 +201,13 @@ class RandomFileViewerSafetyTests(unittest.TestCase):
         outside.write_bytes(b"private")
         self.init(permanent=True)
         self.next_item()
+        # On Windows, resolving a temporary directory can expand its 8.3
+        # alias (e.g. RUNNER~1). Match the canonical path that the app builds.
+        canonical_target = self.root.resolve(strict=True) / target.name
         original_resolve = Path.resolve
 
         def fake_resolve(path, *, strict=False):
-            if path == target:
+            if path == canonical_target:
                 return outside
             return original_resolve(path, strict=strict)
 
@@ -392,7 +395,9 @@ class RandomFileViewerSafetyTests(unittest.TestCase):
         root_key = str(self.root.resolve())
         old_entry = {"status": "skipped", "timestamp": "earlier"}
         self.progress.write_text(json.dumps({root_key: {"sub/media.jpg": old_entry}}), encoding="utf-8")
-        link = self.root / "sub"
+        # The scanner uses the resolved review root; compare against its
+        # canonical spelling even when Windows expands a temporary-path alias.
+        link = self.root.resolve(strict=True) / "sub"
         original_check = viewer._is_link_like
 
         def fake_link_check(path):
@@ -428,10 +433,11 @@ class RandomFileViewerSafetyTests(unittest.TestCase):
             "sub/media.jpg": {"status": "skipped", "timestamp": "earlier"}
         }}
         self.progress.write_text(json.dumps(prior), encoding="utf-8")
+        canonical_inner = self.root.resolve(strict=True) / "sub"
         original_scandir = viewer.os.scandir
 
         def intermittent_failure(path):
-            if Path(path) == inner:
+            if Path(path) == canonical_inner:
                 raise PermissionError("temporary access failure")
             return original_scandir(path)
 
